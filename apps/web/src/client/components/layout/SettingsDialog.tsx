@@ -14,7 +14,21 @@ import { SkillsPanel, AddSkillDropdown } from '@/components/settings/skills';
 import { AboutTab } from '@/components/settings/AboutTab';
 import { DebugSection } from '@/components/settings/DebugSection';
 import { ConnectorsPanel } from '@/components/settings/connectors';
-import { Key, Lightning, Microphone, Info, Plugs } from '@phosphor-icons/react';
+import { ScheduledTasksPanel } from '@/components/settings/ScheduledTasksPanel';
+import { IntegratedServicesPanel } from '@/components/settings/IntegratedServicesPanel';
+import { ToolsPanel } from '@/components/settings/ToolsPanel';
+import { WorkspacePanel } from '@/components/settings/WorkspacePanel';
+import {
+  Key,
+  Lightning,
+  Microphone,
+  Info,
+  Plugs,
+  CalendarBlank,
+  LinkSimple,
+  Terminal,
+  FolderOpen,
+} from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import logoImage from '/assets/logo-1.png';
 
@@ -22,6 +36,10 @@ const TABS = [
   { id: 'providers' as const, labelKey: 'tabs.providers', icon: Key },
   { id: 'skills' as const, labelKey: 'tabs.skills', icon: Lightning },
   { id: 'connectors' as const, labelKey: 'tabs.connectors', icon: Plugs },
+  { id: 'schedule' as const, labelKey: 'tabs.schedule', icon: CalendarBlank },
+  { id: 'integrations' as const, labelKey: 'tabs.integrations', icon: LinkSimple },
+  { id: 'tools' as const, labelKey: 'tabs.tools', icon: Terminal },
+  { id: 'workspace' as const, labelKey: 'tabs.workspace', icon: FolderOpen },
   { id: 'voice' as const, labelKey: 'tabs.voiceInput', icon: Microphone },
   { id: 'about' as const, labelKey: 'tabs.about', icon: Info },
 ];
@@ -37,7 +55,16 @@ interface SettingsDialogProps {
   /**
    * Initial tab to show when dialog opens ('providers' or 'voice')
    */
-  initialTab?: 'providers' | 'voice' | 'skills' | 'connectors' | 'about';
+  initialTab?:
+    | 'providers'
+    | 'voice'
+    | 'skills'
+    | 'connectors'
+    | 'about'
+    | 'schedule'
+    | 'integrations'
+    | 'tools'
+    | 'workspace';
 }
 
 export function SettingsDialog({
@@ -53,7 +80,15 @@ export function SettingsDialog({
   const [closeWarning, setCloseWarning] = useState(false);
   const [showModelError, setShowModelError] = useState(false);
   const [activeTab, setActiveTab] = useState<
-    'providers' | 'voice' | 'skills' | 'connectors' | 'about'
+    | 'providers'
+    | 'voice'
+    | 'skills'
+    | 'connectors'
+    | 'about'
+    | 'schedule'
+    | 'integrations'
+    | 'tools'
+    | 'workspace'
   >(initialTab);
   const [appVersion, setAppVersion] = useState<string>('');
   const [skillsRefreshTrigger, setSkillsRefreshTrigger] = useState(0);
@@ -435,6 +470,34 @@ export function SettingsDialog({
               {activeTab === 'connectors' && (
                 <div className="space-y-6">
                   <ConnectorsPanel />
+                </div>
+              )}
+
+              {/* Schedule Tab */}
+              {activeTab === 'schedule' && (
+                <div className="space-y-6">
+                  <ScheduledTasksPanel />
+                </div>
+              )}
+
+              {/* Integrations Tab */}
+              {activeTab === 'integrations' && (
+                <div className="space-y-6">
+                  <IntegratedServicesPanel />
+                </div>
+              )}
+
+              {/* Tools Tab */}
+              {activeTab === 'tools' && (
+                <div className="space-y-6">
+                  <ToolsPanel />
+                </div>
+              )}
+
+              {/* Workspace Tab */}
+              {activeTab === 'workspace' && (
+                <div className="space-y-6">
+                  <WorkspacePanel />
                 </div>
               )}
 

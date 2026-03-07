@@ -165,7 +165,23 @@ async function main() {
     fs.mkdirSync(tempDir, { recursive: true });
   }
 
-  for (const platform of PLATFORMS) {
+  const args = process.argv.slice(2);
+  let targetPlatform = null;
+  for (const arg of args) {
+    if (arg.startsWith('--platform=')) {
+      targetPlatform = arg.split('=')[1];
+    }
+  }
+
+  const platformsToProcess = targetPlatform
+    ? PLATFORMS.filter((p) => p.name === targetPlatform)
+    : PLATFORMS;
+
+  if (targetPlatform && platformsToProcess.length === 0) {
+    throw new Error(`Unknown platform target: ${targetPlatform}`);
+  }
+
+  for (const platform of platformsToProcess) {
     console.log(`\nProcessing ${platform.name}...`);
 
     const archivePath = path.join(tempDir, platform.file);
@@ -202,7 +218,7 @@ async function main() {
 
   // List what was downloaded
   console.log('\nDirectory structure:');
-  for (const platform of PLATFORMS) {
+  for (const platform of platformsToProcess) {
     const destDir = path.join(RESOURCES_DIR, platform.name);
     if (fs.existsSync(destDir)) {
       const contents = fs.readdirSync(destDir);

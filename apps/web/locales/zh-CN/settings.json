@@ -210,9 +210,21 @@
     "providers": "服务商",
     "connectors": "连接器",
     "skills": "技能",
+    "schedule": "计划任务",
+    "integrations": "集成服务",
+    "tools": "工具",
+    "workspace": "工作区",
     "voiceInput": "语音输入",
     "appearance": "外观",
     "about": "关于"
+  },
+  "workspace": {
+    "location": "工作区位置",
+    "openFolder": "在资源管理器中打开",
+    "contextDescription": "在此处编写 Markdown 文件，提供代理应始终了解的信息。每次会话开始时将完整读取这些文件。",
+    "contextHint": "保持文件简洁——它们每次会话都会占用上下文窗口。",
+    "memoryDescription": "代理以 Obsidian 格式将其学习内容保存在此处。只有索引（标题 + 标签）会注入到上下文中；代理在需要时读取特定文件。",
+    "memoryHint": "您也可以在此处编写笔记——代理会在索引中看到它们。"
   },
   "appearance": {
     "title": "主题",

@@ -113,7 +113,12 @@ export {
   ACCOMPLISH_AGENT_NAME,
 } from './opencode/config-generator.js';
 
-export type { BrowserConfig } from './opencode/config-generator.js';
+export type {
+  BrowserConfig,
+  IntegrationContext,
+  ToolContext,
+  WorkspaceContext,
+} from './opencode/config-generator.js';
 
 export { buildOpenCodeEnvironment } from './opencode/environment.js';
 
@@ -368,6 +373,21 @@ export {
 export type { TodoItem } from './common/types/todo.js';
 export type { LogLevel, LogSource, LogEntry } from './common/types/logging.js';
 export type { ThoughtEvent, CheckpointEvent } from './common/types/thought-stream.js';
+
+// Scheduling types
+export type {
+  ScheduledTaskStatus,
+  ScheduledTask,
+  HeartbeatLog,
+  CreateScheduledTaskInput,
+} from './common/types/scheduling.js';
+
+// Integration types
+export type {
+  DiscoveredEndpoint,
+  IntegratedService,
+  RegisterServiceInput,
+} from './common/types/integration.js';
 
 // Constants
 export {

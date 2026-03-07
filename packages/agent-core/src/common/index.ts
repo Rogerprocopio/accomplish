@@ -115,6 +115,25 @@ export type { TodoItem } from './types/todo.js';
 export type { LogLevel, LogSource, LogEntry } from './types/logging.js';
 export type { ThoughtEvent, CheckpointEvent } from './types/thought-stream.js';
 
+// Scheduling types
+export type {
+  ScheduledTaskStatus,
+  ScheduledTask,
+  HeartbeatLog,
+  CreateScheduledTaskInput,
+} from './types/scheduling.js';
+
+// Integration types
+export type { IntegratedService, RegisterServiceInput } from './types/integration.js';
+
+// Custom Tool types
+export type {
+  CustomToolLanguage,
+  CustomToolStatus,
+  CustomTool,
+  CreateCustomToolInput,
+} from './types/customTool.js';
+
 // === CONSTANTS ===
 export {
   DEV_BROWSER_PORT,

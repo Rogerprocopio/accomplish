@@ -5,6 +5,24 @@ import type { Skill } from '../common/types/skills.js';
 
 export const ACCOMPLISH_AGENT_NAME = 'accomplish';
 
+export interface IntegrationContext {
+  description: string;
+  apiKey: string;
+}
+
+export interface ToolContext {
+  name: string;
+  description: string;
+  language: 'python' | 'nodejs';
+  runCommand: string;
+}
+
+export interface WorkspaceContext {
+  workspacePath: string;
+  contextFiles: Array<{ filename: string; content: string }>;
+  memoryIndex: Array<{ filename: string; title: string; tags: string[] }>;
+}
+
 export interface BrowserConfig {
   /** 'builtin' = dev-browser HTTP server (default), 'remote' = connect to CDP endpoint, 'none' = no browser */
   mode: 'builtin' | 'remote' | 'none';
@@ -45,6 +63,12 @@ export interface ConfigGeneratorOptions {
     url: string;
     accessToken: string;
   }>;
+  /** Registered external service integrations with their API documentation */
+  integrations?: IntegrationContext[];
+  /** Custom tools with their own virtual environments */
+  tools?: ToolContext[];
+  /** Workspace context: user-written context files + agent memory index */
+  workspace?: WorkspaceContext;
 }
 
 export interface ProviderConfig {
@@ -305,6 +329,9 @@ export function generateConfig(options: ConfigGeneratorOptions): GeneratedConfig
     platform,
     mcpToolsPath,
     skills = [],
+    integrations = [],
+    tools = [],
+    workspace,
     bundledNodeBinPath,
     providerConfigs = [],
     permissionApiPort = 9226,
@@ -347,6 +374,128 @@ Use empty array [] if no skills apply to your task.
 </available-skills>
 `;
     systemPrompt += skillsSection;
+  }
+
+  if (integrations.length > 0) {
+    const integrationsSection = `
+
+<integrated-services>
+##############################################################################
+# INTEGRATED SERVICES - API Keys saved by the user
+##############################################################################
+
+The following API keys are saved and ready to use. Use them directly in HTTP
+requests (fetch, curl, etc.) — do NOT ask the user for credentials.
+
+${integrations
+  .map(
+    (integration) => `### ${integration.description}
+**API Key:** ${integration.apiKey}`,
+  )
+  .join('\n\n---\n\n')}
+
+##############################################################################
+</integrated-services>
+`;
+    systemPrompt += integrationsSection;
+  }
+
+  const readyTools = tools.filter((t) => t.runCommand);
+  if (readyTools.length > 0) {
+    const toolsSection = `
+
+<available-tools>
+##############################################################################
+# CUSTOM TOOLS - Pre-configured scripts you can run via bash
+##############################################################################
+
+The following tools are ready to use. Run them directly via bash with arguments.
+Each tool is an isolated script with its own environment.
+
+${readyTools
+  .map(
+    (tool) => `### ${tool.name}
+**Description:** ${tool.description}
+**Language:** ${tool.language}
+**Command:** ${tool.runCommand} [args...]`,
+  )
+  .join('\n\n---\n\n')}
+
+##############################################################################
+</available-tools>
+`;
+    systemPrompt += toolsSection;
+  }
+
+  if (workspace) {
+    // Inject full content of context/ files (user-written, intentionally small)
+    if (workspace.contextFiles.length > 0) {
+      const contextSection = `
+
+<user-context>
+##############################################################################
+# USER CONTEXT - Written by the user for you to always know
+##############################################################################
+
+${workspace.contextFiles.map((f) => `### ${f.filename}\n\n${f.content.trim()}`).join('\n\n---\n\n')}
+
+##############################################################################
+</user-context>
+`;
+      systemPrompt += contextSection;
+    }
+
+    // Inject only the index of memory/ files (agent reads full file on demand)
+    if (workspace.memoryIndex.length > 0) {
+      const memorySection = `
+
+<agent-memory-index>
+##############################################################################
+# AGENT MEMORY - Your saved notes (index only to save context)
+##############################################################################
+
+Your memory notes are stored at: ${workspace.workspacePath}/memory/
+
+${workspace.memoryIndex
+  .map((f) => {
+    const tags = f.tags.length > 0 ? ` — tags: [${f.tags.join(', ')}]` : '';
+    return `- ${f.filename}${tags ? '' : ''} — "${f.title}"${tags}`;
+  })
+  .join('\n')}
+
+To read a specific note use bash: cat "${workspace.workspacePath}/memory/<filename>"
+To save a new note use bash: write a .md file with YAML frontmatter to that directory.
+
+##############################################################################
+</agent-memory-index>
+`;
+      systemPrompt += memorySection;
+    } else {
+      // Tell agent where to save even if no notes yet
+      const memorySection = `
+
+<agent-memory-index>
+##############################################################################
+# AGENT MEMORY - Your saved notes
+##############################################################################
+
+No memory notes saved yet. Save your learnings to: ${workspace.workspacePath}/memory/
+
+Use Obsidian format with YAML frontmatter:
+---
+tags: [tag1, tag2]
+date: YYYY-MM-DD
+type: learning
+---
+# Note title
+
+Note content with [[internal links]] and #tags.
+
+##############################################################################
+</agent-memory-index>
+`;
+      systemPrompt += memorySection;
+    }
   }
 
   if (!bundledNodeBinPath) {

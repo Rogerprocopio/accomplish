@@ -29,6 +29,7 @@ export {
   getMcpToolsPath,
   syncApiKeysToOpenCodeAuth,
   ACCOMPLISH_AGENT_NAME,
+  getWorkspacePath,
 } from './config-generator';
 
 export { loginOpenAiWithChatGpt } from './auth-browser';

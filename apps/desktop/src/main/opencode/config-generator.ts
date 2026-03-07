@@ -9,6 +9,11 @@ import {
   isTokenExpired,
   refreshAccessToken,
 } from '@accomplish_ai/agent-core';
+import type { IntegrationContext, ToolContext, WorkspaceContext } from '@accomplish_ai/agent-core';
+import { getAllIntegratedServices } from '@accomplish_ai/agent-core/storage/repositories/integratedServices';
+import { getAllCustomTools } from '@accomplish_ai/agent-core/storage/repositories/customTools';
+import { initWorkspace, readWorkspaceContent } from '@accomplish_ai/agent-core/workspace/manager';
+import { getRunCommand } from '../services/toolsManager';
 import { getApiKey, getAllApiKeys } from '../store/secureStorage';
 import { getStorage } from '../store/storage';
 import { getBundledNodePaths } from '../utils/bundled-node';
@@ -132,6 +137,67 @@ export async function generateOpenCodeConfig(azureFoundryToken?: string): Promis
     });
   }
 
+  // Load registered integrations with their API keys
+  const integrations: IntegrationContext[] = [];
+  try {
+    const registeredServices = getAllIntegratedServices();
+    for (const service of registeredServices) {
+      integrations.push({
+        description: service.description,
+        apiKey: service.apiKey,
+      });
+    }
+    if (integrations.length > 0) {
+      console.log(
+        `[OpenCode Config] Loaded ${integrations.length} integration(s) into system prompt`,
+      );
+    }
+  } catch (err) {
+    console.warn('[OpenCode Config] Failed to load integrations:', err);
+  }
+
+  // Load ready custom tools
+  const tools: ToolContext[] = [];
+  try {
+    const nodePath = bundledNodeBinPath
+      ? path.join(bundledNodeBinPath, process.platform === 'win32' ? 'node.exe' : 'node')
+      : 'node';
+    const allTools = getAllCustomTools();
+    for (const tool of allTools) {
+      if (tool.status === 'ready') {
+        tools.push({
+          name: tool.name,
+          description: tool.description,
+          language: tool.language,
+          runCommand: getRunCommand(tool, userDataPath, nodePath),
+        });
+      }
+    }
+    if (tools.length > 0) {
+      console.log(`[OpenCode Config] Loaded ${tools.length} custom tool(s) into system prompt`);
+    }
+  } catch (err) {
+    console.warn('[OpenCode Config] Failed to load custom tools:', err);
+  }
+
+  // Load workspace content (context files fully + memory index only)
+  let workspace: WorkspaceContext | undefined;
+  try {
+    const workspacePath = getWorkspacePath();
+    initWorkspace(workspacePath);
+    const content = readWorkspaceContent(workspacePath);
+    workspace = content;
+    const ctxCount = content.contextFiles.length;
+    const memCount = content.memoryIndex.length;
+    if (ctxCount > 0 || memCount > 0) {
+      console.log(
+        `[OpenCode Config] Workspace loaded: ${ctxCount} context file(s), ${memCount} memory note(s)`,
+      );
+    }
+  } catch (err) {
+    console.warn('[OpenCode Config] Failed to load workspace:', err);
+  }
+
   const result = generateConfig({
     platform: process.platform,
     mcpToolsPath,
@@ -146,6 +212,9 @@ export async function generateOpenCodeConfig(azureFoundryToken?: string): Promis
     model: modelOverride?.model,
     smallModel: modelOverride?.smallModel,
     connectors: connectors.length > 0 ? connectors : undefined,
+    integrations: integrations.length > 0 ? integrations : undefined,
+    tools: tools.length > 0 ? tools : undefined,
+    workspace,
   });
 
   process.env.OPENCODE_CONFIG = result.configPath;
@@ -163,6 +232,13 @@ export async function generateOpenCodeConfig(azureFoundryToken?: string): Promis
  */
 export function getOpenCodeConfigPath(): string {
   return path.join(app.getPath('userData'), 'opencode', 'opencode.json');
+}
+
+/**
+ * Returns the path to the workspace directory (in the user's home directory).
+ */
+export function getWorkspacePath(): string {
+  return path.join(app.getPath('home'), 'workspace');
 }
 
 // Re-export getOpenCodeAuthPath from core for consumers that import from this module

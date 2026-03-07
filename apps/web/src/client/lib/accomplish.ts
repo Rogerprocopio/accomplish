@@ -24,6 +24,10 @@ import type {
   ToolSupportStatus,
   Skill,
   McpConnector,
+  ScheduledTask,
+  IntegratedService,
+  CustomTool,
+  CreateCustomToolInput,
 } from '@accomplish_ai/agent-core/common';
 
 // Define the API interface
@@ -368,6 +372,31 @@ interface AccomplishAPI {
   completeConnectorOAuth(state: string, code: string): Promise<McpConnector>;
   disconnectConnector(connectorId: string): Promise<void>;
   onMcpAuthCallback?(callback: (url: string) => void): () => void;
+
+  // Scheduled Tasks
+  listScheduledTasks(): Promise<ScheduledTask[]>;
+  createScheduledTask(input: {
+    title: string;
+    description: string;
+    action: string;
+    scheduledAt: string;
+  }): Promise<ScheduledTask>;
+  deleteScheduledTask(taskId: string): Promise<void>;
+
+  // Integrated Services
+  listIntegrations(): Promise<IntegratedService[]>;
+  registerIntegration(input: { description: string; apiKey: string }): Promise<IntegratedService>;
+  deleteIntegration(id: string): Promise<void>;
+
+  // Custom Tools
+  listTools(): Promise<CustomTool[]>;
+  createTool(input: CreateCustomToolInput): Promise<CustomTool>;
+  deleteTool(id: string): Promise<void>;
+  getTool(id: string): Promise<CustomTool | null>;
+
+  // Workspace
+  getWorkspacePath(): Promise<string>;
+  openWorkspace(): Promise<void>;
 }
 
 interface AccomplishShell {

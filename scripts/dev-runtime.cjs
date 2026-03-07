@@ -104,13 +104,15 @@ function resolveWindowsPnpmCjsPath() {
       const line = rawLine.trim();
       if (!line) continue;
 
-      if (/\.cjs$/i.test(line)) {
+      if (/\.(cjs|js)$/i.test(line)) {
         candidates.push(line);
         continue;
       }
 
       const binDir = path.dirname(line);
       candidates.push(path.resolve(binDir, '..', 'pnpm', 'bin', 'pnpm.cjs'));
+      candidates.push(path.resolve(binDir, 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'));
+      candidates.push(path.resolve(binDir, 'node_modules', 'corepack', 'dist', 'pnpm.js'));
     }
   } catch {}
 

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { ipcMain, BrowserWindow, shell, dialog, nativeTheme } from 'electron';
+import { ipcMain, BrowserWindow, shell, dialog, nativeTheme, app } from 'electron';
 import type { IpcMainInvokeEvent } from 'electron';
 import { URL } from 'url';
 import fs from 'fs';
@@ -8,6 +8,7 @@ import {
   getOpenCodeCliVersion,
   getTaskManager,
   cleanupVertexServiceAccountKey,
+  getWorkspacePath,
 } from '../opencode';
 import { getLogCollector } from '../logging';
 import {
@@ -98,6 +99,25 @@ import {
 } from '../test-utils/mock-task-flow';
 import { skillsManager } from '../skills';
 import { registerVertexHandlers } from '../providers';
+import {
+  createScheduledTask,
+  getAllScheduledTasks,
+  deleteScheduledTask,
+  getHeartbeatLogs,
+} from '@accomplish_ai/agent-core/storage/repositories/scheduledTasks';
+import {
+  createIntegratedService,
+  getAllIntegratedServices,
+  deleteIntegratedService,
+} from '@accomplish_ai/agent-core/storage/repositories/integratedServices';
+import {
+  createCustomTool,
+  getAllCustomTools,
+  deleteCustomTool,
+  getCustomToolById,
+} from '@accomplish_ai/agent-core/storage/repositories/customTools';
+import { setupToolEnvironment, cleanupToolDirectory } from '../services/toolsManager';
+import { getNodePath } from '../utils/bundled-node';
 
 const API_KEY_VALIDATION_TIMEOUT_MS = 15000;
 
@@ -1357,6 +1377,97 @@ export function registerIPCHandlers(): void {
   handle('connectors:disconnect', async (_event, connectorId: string) => {
     storage.deleteConnectorTokens(connectorId);
     storage.setConnectorStatus(connectorId, 'disconnected');
+  });
+
+  // ── Scheduled Tasks ────────────────────────────────────────────────────────
+
+  handle('scheduled-task:list', async () => {
+    return getAllScheduledTasks();
+  });
+
+  handle(
+    'scheduled-task:create',
+    async (
+      _event,
+      input: { title: string; description: string; action: string; scheduledAt: string },
+    ) => {
+      const id = crypto.randomUUID();
+      return createScheduledTask(id, input);
+    },
+  );
+
+  handle('scheduled-task:delete', async (_event, taskId: string) => {
+    deleteScheduledTask(taskId);
+  });
+
+  handle('heartbeat:get-logs', async (_event, limit?: number) => {
+    return getHeartbeatLogs(limit ?? 50);
+  });
+
+  // ── Integrated Services ────────────────────────────────────────────────────
+
+  handle('integration:list', async () => {
+    return getAllIntegratedServices();
+  });
+
+  handle('integration:register', async (_event, input: { description: string; apiKey: string }) => {
+    const id = crypto.randomUUID();
+    return createIntegratedService(id, input.description, input.apiKey);
+  });
+
+  handle('integration:delete', async (_event, id: string) => {
+    deleteIntegratedService(id);
+  });
+
+  // ── Custom Tools ────────────────────────────────────────────────────────────
+
+  handle('tool:list', async () => {
+    return getAllCustomTools();
+  });
+
+  handle(
+    'tool:create',
+    async (
+      _event,
+      input: {
+        name: string;
+        description: string;
+        language: 'python' | 'nodejs';
+        code: string;
+        requirements: string;
+      },
+    ) => {
+      const id = crypto.randomUUID();
+      const tool = createCustomTool(id, input);
+      const userDataPath = app.getPath('userData');
+      const nodePath = getNodePath();
+      // Setup is async — caller gets the pending record; status updates in DB
+      void setupToolEnvironment(tool, userDataPath, nodePath).catch((err) => {
+        console.error('[tool:create] Setup failed:', err);
+      });
+      return tool;
+    },
+  );
+
+  handle('tool:delete', async (_event, id: string) => {
+    const userDataPath = app.getPath('userData');
+    deleteCustomTool(id);
+    cleanupToolDirectory(userDataPath, id);
+  });
+
+  handle('tool:get', async (_event, id: string) => {
+    return getCustomToolById(id);
+  });
+
+  // ── Workspace ────────────────────────────────────────────────────────────────
+
+  handle('workspace:get-path', async () => {
+    return getWorkspacePath();
+  });
+
+  handle('workspace:open', async () => {
+    const workspacePath = getWorkspacePath();
+    await shell.openPath(workspacePath);
   });
 }
 

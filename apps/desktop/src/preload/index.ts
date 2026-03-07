@@ -469,6 +469,41 @@ const accomplishAPI = {
       ipcRenderer.removeListener('auth:mcp-callback', listener);
     };
   },
+
+  // Scheduled Tasks
+  listScheduledTasks: (): Promise<unknown[]> => ipcRenderer.invoke('scheduled-task:list'),
+  createScheduledTask: (input: {
+    title: string;
+    description: string;
+    action: string;
+    scheduledAt: string;
+  }): Promise<unknown> => ipcRenderer.invoke('scheduled-task:create', input),
+  deleteScheduledTask: (taskId: string): Promise<void> =>
+    ipcRenderer.invoke('scheduled-task:delete', taskId),
+  getHeartbeatLogs: (limit?: number): Promise<unknown[]> =>
+    ipcRenderer.invoke('heartbeat:get-logs', limit),
+
+  // Integrated Services
+  listIntegrations: (): Promise<unknown[]> => ipcRenderer.invoke('integration:list'),
+  registerIntegration: (input: { description: string; apiKey: string }): Promise<unknown> =>
+    ipcRenderer.invoke('integration:register', input),
+  deleteIntegration: (id: string): Promise<void> => ipcRenderer.invoke('integration:delete', id),
+
+  // Workspace
+  getWorkspacePath: (): Promise<string> => ipcRenderer.invoke('workspace:get-path'),
+  openWorkspace: (): Promise<void> => ipcRenderer.invoke('workspace:open'),
+
+  // Custom Tools
+  listTools: (): Promise<unknown[]> => ipcRenderer.invoke('tool:list'),
+  createTool: (input: {
+    name: string;
+    description: string;
+    language: 'python' | 'nodejs';
+    code: string;
+    requirements: string;
+  }): Promise<unknown> => ipcRenderer.invoke('tool:create', input),
+  deleteTool: (id: string): Promise<void> => ipcRenderer.invoke('tool:delete', id),
+  getTool: (id: string): Promise<unknown> => ipcRenderer.invoke('tool:get', id),
 };
 
 // Expose the API to the renderer

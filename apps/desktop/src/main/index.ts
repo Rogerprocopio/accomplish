@@ -36,6 +36,7 @@ import {
 import { getApiKey, clearSecureStorage } from './store/secureStorage';
 import { initializeLogCollector, shutdownLogCollector, getLogCollector } from './logging';
 import { skillsManager } from './skills';
+import { startHeartbeatService, stopHeartbeatService } from './services/heartbeat';
 
 if (process.argv.includes('--e2e-skip-auth')) {
   (global as Record<string, unknown>).E2E_SKIP_AUTH = true;
@@ -312,6 +313,8 @@ if (!gotTheLock) {
     registerIPCHandlers();
     console.log('[Main] IPC handlers registered');
 
+    startHeartbeatService();
+
     createWindow();
 
     if (mainWindow) {
@@ -335,6 +338,7 @@ app.on('window-all-closed', () => {
 });
 
 app.on('before-quit', () => {
+  stopHeartbeatService();
   disposeTaskManager(); // Also cleans up proxies internally
   cleanupVertexServiceAccountKey();
   oauthBrowserFlow.dispose();

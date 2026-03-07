@@ -28,7 +28,7 @@ export function HomePage() {
   const [prompt, setPrompt] = useState('');
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
   const [settingsInitialTab, setSettingsInitialTab] = useState<
-    'providers' | 'voice' | 'skills' | 'connectors'
+    'providers' | 'voice' | 'skills' | 'connectors' | 'schedule' | 'integrations'
   >('providers');
   const { startTask, interruptTask, isLoading, addTaskUpdate, setPermissionRequest } =
     useTaskStore();

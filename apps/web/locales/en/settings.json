@@ -238,9 +238,21 @@
     "providers": "Providers",
     "connectors": "Connectors",
     "skills": "Skills",
+    "schedule": "Schedule",
+    "integrations": "Integrations",
+    "tools": "Tools",
+    "workspace": "Workspace",
     "voiceInput": "Voice Input",
     "appearance": "Appearance",
     "about": "About"
+  },
+  "workspace": {
+    "location": "Workspace Location",
+    "openFolder": "Open in Explorer",
+    "contextDescription": "Write Markdown files here with information the agent should always know. These files are read in full at the start of every session.",
+    "contextHint": "Keep files concise — they consume context window on every session.",
+    "memoryDescription": "The agent saves its learnings here in Obsidian format. Only the index (title + tags) is injected into context; the agent reads specific files when needed.",
+    "memoryHint": "You can also write notes here — the agent will see them in the index."
   },
   "appearance": {
     "title": "Theme",
