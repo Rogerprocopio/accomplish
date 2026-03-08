@@ -37,6 +37,7 @@ import { getApiKey, clearSecureStorage } from './store/secureStorage';
 import { initializeLogCollector, shutdownLogCollector, getLogCollector } from './logging';
 import { skillsManager } from './skills';
 import { startHeartbeatService, stopHeartbeatService } from './services/heartbeat';
+import { initWhatsApp, disconnectWhatsApp } from './services/whatsapp';
 
 if (process.argv.includes('--e2e-skip-auth')) {
   (global as Record<string, unknown>).E2E_SKIP_AUTH = true;
@@ -320,6 +321,7 @@ if (!gotTheLock) {
     if (mainWindow) {
       initThoughtStreamApi(mainWindow);
       startThoughtStreamServer();
+      initWhatsApp(mainWindow, app.getPath('userData'));
     }
 
     app.on('activate', () => {
@@ -339,6 +341,7 @@ app.on('window-all-closed', () => {
 
 app.on('before-quit', () => {
   stopHeartbeatService();
+  void disconnectWhatsApp().catch(() => undefined);
   disposeTaskManager(); // Also cleans up proxies internally
   cleanupVertexServiceAccountKey();
   oauthBrowserFlow.dispose();

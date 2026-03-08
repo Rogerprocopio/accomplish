@@ -28,6 +28,8 @@ import type {
   IntegratedService,
   CustomTool,
   CreateCustomToolInput,
+  WhatsAppStatus,
+  WhatsAppAllowlistEntry,
 } from '@accomplish_ai/agent-core/common';
 
 // Define the API interface
@@ -397,6 +399,21 @@ interface AccomplishAPI {
   // Workspace
   getWorkspacePath(): Promise<string>;
   openWorkspace(): Promise<void>;
+
+  // WhatsApp
+  whatsappGetStatus(): Promise<{ status: WhatsAppStatus; phoneNumber?: string }>;
+  whatsappConnect(): Promise<void>;
+  whatsappDisconnect(): Promise<void>;
+  whatsappGetAllowlist(): Promise<WhatsAppAllowlistEntry[]>;
+  whatsappAddToAllowlist(input: {
+    phoneNumber: string;
+    label?: string;
+  }): Promise<WhatsAppAllowlistEntry>;
+  whatsappRemoveFromAllowlist(id: string): Promise<void>;
+  onWhatsAppQR?(callback: (dataUrl: string) => void): () => void;
+  onWhatsAppStatus?(
+    callback: (data: { status: WhatsAppStatus; phoneNumber?: string }) => void,
+  ): () => void;
 }
 
 interface AccomplishShell {

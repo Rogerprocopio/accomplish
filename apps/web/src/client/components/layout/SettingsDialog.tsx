@@ -18,6 +18,7 @@ import { ScheduledTasksPanel } from '@/components/settings/ScheduledTasksPanel';
 import { IntegratedServicesPanel } from '@/components/settings/IntegratedServicesPanel';
 import { ToolsPanel } from '@/components/settings/ToolsPanel';
 import { WorkspacePanel } from '@/components/settings/WorkspacePanel';
+import { WhatsAppPanel } from '@/components/settings/WhatsAppPanel';
 import {
   Key,
   Lightning,
@@ -28,6 +29,7 @@ import {
   LinkSimple,
   Terminal,
   FolderOpen,
+  WhatsappLogo,
 } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import logoImage from '/assets/logo-1.png';
@@ -40,6 +42,7 @@ const TABS = [
   { id: 'integrations' as const, labelKey: 'tabs.integrations', icon: LinkSimple },
   { id: 'tools' as const, labelKey: 'tabs.tools', icon: Terminal },
   { id: 'workspace' as const, labelKey: 'tabs.workspace', icon: FolderOpen },
+  { id: 'whatsapp' as const, labelKey: 'tabs.whatsapp', icon: WhatsappLogo },
   { id: 'voice' as const, labelKey: 'tabs.voiceInput', icon: Microphone },
   { id: 'about' as const, labelKey: 'tabs.about', icon: Info },
 ];
@@ -64,7 +67,8 @@ interface SettingsDialogProps {
     | 'schedule'
     | 'integrations'
     | 'tools'
-    | 'workspace';
+    | 'workspace'
+    | 'whatsapp';
 }
 
 export function SettingsDialog({
@@ -89,6 +93,7 @@ export function SettingsDialog({
     | 'integrations'
     | 'tools'
     | 'workspace'
+    | 'whatsapp'
   >(initialTab);
   const [appVersion, setAppVersion] = useState<string>('');
   const [skillsRefreshTrigger, setSkillsRefreshTrigger] = useState(0);
@@ -498,6 +503,13 @@ export function SettingsDialog({
               {activeTab === 'workspace' && (
                 <div className="space-y-6">
                   <WorkspacePanel />
+                </div>
+              )}
+
+              {/* WhatsApp Tab */}
+              {activeTab === 'whatsapp' && (
+                <div className="space-y-6">
+                  <WhatsAppPanel />
                 </div>
               )}
 

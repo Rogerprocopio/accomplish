@@ -118,6 +118,12 @@ import {
 } from '@accomplish_ai/agent-core/storage/repositories/customTools';
 import { setupToolEnvironment, cleanupToolDirectory } from '../services/toolsManager';
 import { getNodePath } from '../utils/bundled-node';
+import { connectWhatsApp, disconnectWhatsApp, getWhatsAppStatus } from '../services/whatsapp';
+import {
+  getWhatsAppAllowlist,
+  addToWhatsAppAllowlist,
+  removeFromWhatsAppAllowlist,
+} from '@accomplish_ai/agent-core/storage/repositories/whatsapp';
 
 const API_KEY_VALIDATION_TIMEOUT_MS = 15000;
 
@@ -1468,6 +1474,36 @@ export function registerIPCHandlers(): void {
   handle('workspace:open', async () => {
     const workspacePath = getWorkspacePath();
     await shell.openPath(workspacePath);
+  });
+
+  // ── WhatsApp ──────────────────────────────────────────────────────────────
+
+  handle('whatsapp:get-status', async () => {
+    return getWhatsAppStatus();
+  });
+
+  handle('whatsapp:connect', async () => {
+    await connectWhatsApp();
+  });
+
+  handle('whatsapp:disconnect', async () => {
+    await disconnectWhatsApp();
+  });
+
+  handle('whatsapp:get-allowlist', async () => {
+    return getWhatsAppAllowlist();
+  });
+
+  handle(
+    'whatsapp:add-to-allowlist',
+    async (_event, input: { phoneNumber: string; label?: string }) => {
+      const id = crypto.randomUUID();
+      return addToWhatsAppAllowlist(id, input.phoneNumber, input.label);
+    },
+  );
+
+  handle('whatsapp:remove-from-allowlist', async (_event, id: string) => {
+    removeFromWhatsAppAllowlist(id);
   });
 }
 

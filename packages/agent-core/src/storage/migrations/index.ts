@@ -18,15 +18,29 @@ import { migration as v008 } from './v008-theme.js';
 import { migration as v009 } from './v009-scheduling.js';
 import { migration as v010 } from './v010-integration-simplify.js';
 import { migration as v011 } from './v011-custom-tools.js';
+import { migration as v012 } from './v012-whatsapp.js';
 
-const migrations: Migration[] = [v001, v002, v003, v004, v005, v006, v007, v008, v009, v010, v011];
+const migrations: Migration[] = [
+  v001,
+  v002,
+  v003,
+  v004,
+  v005,
+  v006,
+  v007,
+  v008,
+  v009,
+  v010,
+  v011,
+  v012,
+];
 
 export function registerMigration(migration: Migration): void {
   migrations.push(migration);
   migrations.sort((a, b) => a.version - b.version);
 }
 
-export const CURRENT_VERSION = 11;
+export const CURRENT_VERSION = 12;
 
 export function getStoredVersion(db: Database): number {
   try {

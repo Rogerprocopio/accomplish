@@ -504,6 +504,26 @@ const accomplishAPI = {
   }): Promise<unknown> => ipcRenderer.invoke('tool:create', input),
   deleteTool: (id: string): Promise<void> => ipcRenderer.invoke('tool:delete', id),
   getTool: (id: string): Promise<unknown> => ipcRenderer.invoke('tool:get', id),
+
+  // WhatsApp
+  whatsappGetStatus: (): Promise<unknown> => ipcRenderer.invoke('whatsapp:get-status'),
+  whatsappConnect: (): Promise<void> => ipcRenderer.invoke('whatsapp:connect'),
+  whatsappDisconnect: (): Promise<void> => ipcRenderer.invoke('whatsapp:disconnect'),
+  whatsappGetAllowlist: (): Promise<unknown[]> => ipcRenderer.invoke('whatsapp:get-allowlist'),
+  whatsappAddToAllowlist: (input: { phoneNumber: string; label?: string }): Promise<unknown> =>
+    ipcRenderer.invoke('whatsapp:add-to-allowlist', input),
+  whatsappRemoveFromAllowlist: (id: string): Promise<void> =>
+    ipcRenderer.invoke('whatsapp:remove-from-allowlist', id),
+  onWhatsAppQR: (callback: (dataUrl: string) => void) => {
+    const listener = (_: unknown, dataUrl: string) => callback(dataUrl);
+    ipcRenderer.on('whatsapp:qr', listener);
+    return () => ipcRenderer.removeListener('whatsapp:qr', listener);
+  },
+  onWhatsAppStatus: (callback: (data: { status: string; phoneNumber?: string }) => void) => {
+    const listener = (_: unknown, data: { status: string; phoneNumber?: string }) => callback(data);
+    ipcRenderer.on('whatsapp:status', listener);
+    return () => ipcRenderer.removeListener('whatsapp:status', listener);
+  },
 };
 
 // Expose the API to the renderer

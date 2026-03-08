@@ -144,6 +144,13 @@ export type {
   RegisterServiceInput,
 } from './common/types/integration.js';
 
+// WhatsApp types
+export type {
+  WhatsAppStatus,
+  WhatsAppAllowlistEntry,
+  WhatsAppState,
+} from './common/types/whatsapp.js';
+
 // === CONSTANTS ===
 export {
   DEV_BROWSER_PORT,
