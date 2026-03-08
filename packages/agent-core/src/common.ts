@@ -148,6 +148,8 @@ export type {
 export type {
   WhatsAppStatus,
   WhatsAppAllowlistEntry,
+  WhatsAppPendingPairing,
+  WhatsAppAuthorizedJid,
   WhatsAppState,
 } from './common/types/whatsapp.js';
 

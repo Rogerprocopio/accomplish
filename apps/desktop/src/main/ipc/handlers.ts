@@ -120,9 +120,12 @@ import { setupToolEnvironment, cleanupToolDirectory } from '../services/toolsMan
 import { getNodePath } from '../utils/bundled-node';
 import { connectWhatsApp, disconnectWhatsApp, getWhatsAppStatus } from '../services/whatsapp';
 import {
-  getWhatsAppAllowlist,
-  addToWhatsAppAllowlist,
-  removeFromWhatsAppAllowlist,
+  getAllActivePendingPairings,
+  getPendingPairingById,
+  deletePendingPairing,
+  addAuthorizedJid,
+  getAuthorizedJids,
+  removeAuthorizedJid,
 } from '@accomplish_ai/agent-core/storage/repositories/whatsapp';
 
 const API_KEY_VALIDATION_TIMEOUT_MS = 15000;
@@ -1490,20 +1493,31 @@ export function registerIPCHandlers(): void {
     await disconnectWhatsApp();
   });
 
-  handle('whatsapp:get-allowlist', async () => {
-    return getWhatsAppAllowlist();
+  handle('whatsapp:get-pending-pairings', async () => {
+    return getAllActivePendingPairings();
   });
 
-  handle(
-    'whatsapp:add-to-allowlist',
-    async (_event, input: { phoneNumber: string; label?: string }) => {
-      const id = crypto.randomUUID();
-      return addToWhatsAppAllowlist(id, input.phoneNumber, input.label);
-    },
-  );
+  handle('whatsapp:approve-pairing', async (_event, input: { id: string; label?: string }) => {
+    const pairing = getPendingPairingById(input.id);
+    if (!pairing) {
+      throw new Error('Pairing request not found or expired');
+    }
+    const newId = crypto.randomUUID();
+    const authorized = addAuthorizedJid(newId, pairing.jid, input.label);
+    deletePendingPairing(input.id);
+    return authorized;
+  });
 
-  handle('whatsapp:remove-from-allowlist', async (_event, id: string) => {
-    removeFromWhatsAppAllowlist(id);
+  handle('whatsapp:deny-pairing', async (_event, id: string) => {
+    deletePendingPairing(id);
+  });
+
+  handle('whatsapp:get-authorized-jids', async () => {
+    return getAuthorizedJids();
+  });
+
+  handle('whatsapp:remove-authorized-jid', async (_event, id: string) => {
+    removeAuthorizedJid(id);
   });
 }
 

@@ -1,10 +1,15 @@
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 import { createTaskId } from '@accomplish_ai/agent-core';
 import { getTaskManager } from '../opencode';
 import { getStorage } from '../store/storage';
 import type { TaskCallbacks } from '../opencode';
-import { isPhoneNumberAllowed } from '@accomplish_ai/agent-core/storage/repositories/whatsapp';
+import {
+  isJidAuthorized,
+  getActivePendingPairing,
+  createPendingPairing,
+} from '@accomplish_ai/agent-core/storage/repositories/whatsapp';
 import type { WhatsAppStatus } from '@accomplish_ai/agent-core/common';
 import type { BrowserWindow } from 'electron';
 import type { TaskMessage } from '@accomplish_ai/agent-core';
@@ -57,20 +62,56 @@ function extractPhoneNumber(jid: string): string {
   return jid.split('@')[0].split(':')[0];
 }
 
+function generatePairingCode(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = 'ACMP-';
+  for (let i = 0; i < 6; i++) {
+    code += chars[crypto.randomInt(chars.length)];
+  }
+  return code;
+}
+
 async function processIncomingMessage(
   sender: string,
   text: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   sock: any,
 ): Promise<void> {
-  const phoneNumber = extractPhoneNumber(sender);
+  // Check JID-based authorization
+  if (!isJidAuthorized(sender)) {
+    // Check if there's already a pending pairing for this JID
+    const existing = getActivePendingPairing(sender);
 
-  if (!isPhoneNumberAllowed(phoneNumber)) {
-    console.log(`[WhatsApp] Message from non-allowed number ${phoneNumber} — ignored`);
+    if (existing) {
+      // Remind user of the pending code
+      await sock
+        .sendMessage(sender, {
+          text: `⏳ Aguardando aprovação. Seu código de verificação é: *${existing.code}*\n\nAcesse as configurações do Accomplish para aprovar o acesso.`,
+        })
+        .catch((err: Error) => console.error('[WhatsApp] Failed to send reminder:', err));
+      return;
+    }
+
+    // Generate a new pairing code
+    const id = crypto.randomUUID();
+    const code = generatePairingCode();
+    const pairing = createPendingPairing(id, sender, code);
+
+    // Send code to the user via WhatsApp
+    await sock
+      .sendMessage(sender, {
+        text: `🔐 Para autorizar este número no Accomplish, use o código:\n\n*${code}*\n\nAcesse as configurações > WhatsApp e cole o código para aprovar o acesso.`,
+      })
+      .catch((err: Error) => console.error('[WhatsApp] Failed to send pairing code:', err));
+
+    // Notify renderer so the UI can refresh the pending pairings list
+    _sendToRenderer?.('whatsapp:new-pairing', pairing);
+
+    console.log(`[WhatsApp] Sent pairing code ${code} to ${sender}`);
     return;
   }
 
-  console.log(`[WhatsApp] Processing message from ${phoneNumber}: ${text.substring(0, 80)}…`);
+  console.log(`[WhatsApp] Processing message from ${sender}: ${text.substring(0, 80)}…`);
 
   const taskId = createTaskId();
   const storage = getStorage();
@@ -111,7 +152,8 @@ async function processIncomingMessage(
   try {
     const task = await taskManager.startTask(taskId, { prompt: text }, callbacks);
     storage.saveTask(task);
-    console.log(`[WhatsApp] Task ${task.id} started for sender ${phoneNumber}`);
+    const phone = extractPhoneNumber(sender);
+    console.log(`[WhatsApp] Task ${task.id} started for sender ${phone}`);
   } catch (err) {
     console.error('[WhatsApp] Failed to start task:', err);
   }

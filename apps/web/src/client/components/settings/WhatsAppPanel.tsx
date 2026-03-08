@@ -1,29 +1,101 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getAccomplish } from '@/lib/accomplish';
-import type { WhatsAppAllowlistEntry, WhatsAppStatus } from '@accomplish_ai/agent-core/common';
-import { Trash, Phone, PhoneDisconnect, PhonePlus, WifiHigh } from '@phosphor-icons/react';
+import type {
+  WhatsAppStatus,
+  WhatsAppPendingPairing,
+  WhatsAppAuthorizedJid,
+} from '@accomplish_ai/agent-core/common';
+import {
+  Trash,
+  PhoneDisconnect,
+  PhonePlus,
+  WifiHigh,
+  CheckCircle,
+  XCircle,
+  UserCircle,
+  Clock,
+} from '@phosphor-icons/react';
 
-function AllowlistCard({
+// ── Pending Pairing Card ──────────────────────────────────────────────────────
+
+function PendingPairingCard({
+  pairing,
+  onApprove,
+  onDeny,
+}: {
+  pairing: WhatsAppPendingPairing;
+  onApprove: (label?: string) => void;
+  onDeny: () => void;
+}) {
+  const [label, setLabel] = useState('');
+
+  return (
+    <div className="rounded-lg border border-border bg-background p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Clock className="h-4 w-4 text-warning shrink-0" />
+          <div className="min-w-0">
+            <p className="text-sm font-mono font-semibold text-foreground tracking-widest">
+              {pairing.code}
+            </p>
+            <p className="text-xs text-muted-foreground truncate font-mono">{pairing.jid}</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="Apelido (opcional, ex: João)"
+          className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+
+      <div className="flex gap-2 justify-end">
+        <button
+          onClick={onDeny}
+          className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm text-muted-foreground hover:text-destructive hover:border-destructive/50 transition-colors"
+        >
+          <XCircle className="h-4 w-4" />
+          Recusar
+        </button>
+        <button
+          onClick={() => onApprove(label.trim() || undefined)}
+          className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+        >
+          <CheckCircle className="h-4 w-4" />
+          Aprovar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Authorized JID Card ───────────────────────────────────────────────────────
+
+function AuthorizedJidCard({
   entry,
   onDelete,
 }: {
-  entry: WhatsAppAllowlistEntry;
+  entry: WhatsAppAuthorizedJid;
   onDelete: () => void;
 }) {
   return (
     <div className="rounded-lg border border-border bg-background p-4 flex items-center justify-between">
       <div className="flex items-center gap-2 min-w-0">
-        <Phone className="h-4 w-4 text-primary shrink-0" />
+        <UserCircle className="h-4 w-4 text-green-500 shrink-0" />
         <div className="min-w-0">
-          <p className="text-sm font-mono font-medium text-foreground truncate">
-            +{entry.phoneNumber}
-          </p>
-          {entry.label && <p className="text-xs text-muted-foreground truncate">{entry.label}</p>}
+          {entry.label && (
+            <p className="text-sm font-medium text-foreground truncate">{entry.label}</p>
+          )}
+          <p className="text-xs text-muted-foreground font-mono truncate">{entry.jid}</p>
         </div>
       </div>
       <button
         onClick={onDelete}
-        title="Remover número"
+        title="Revogar acesso"
         className="ml-3 rounded-md p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
       >
         <Trash className="h-4 w-4" />
@@ -32,29 +104,27 @@ function AllowlistCard({
   );
 }
 
-interface AddFormState {
-  phoneNumber: string;
-  label: string;
-}
-
-const EMPTY_FORM: AddFormState = { phoneNumber: '', label: '' };
+// ── Main Panel ────────────────────────────────────────────────────────────────
 
 export function WhatsAppPanel() {
   const [status, setStatus] = useState<WhatsAppStatus>('disconnected');
   const [phoneNumber, setPhoneNumber] = useState<string | undefined>();
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-  const [allowlist, setAllowlist] = useState<WhatsAppAllowlistEntry[]>([]);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [form, setForm] = useState<AddFormState>(EMPTY_FORM);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [pendingPairings, setPendingPairings] = useState<WhatsAppPendingPairing[]>([]);
+  const [authorizedJids, setAuthorizedJids] = useState<WhatsAppAuthorizedJid[]>([]);
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const accomplish = getAccomplish();
 
-  const loadAllowlist = useCallback(async () => {
-    const list = await accomplish.whatsappGetAllowlist();
-    setAllowlist(list);
+  const loadPending = useCallback(async () => {
+    const list = await accomplish.whatsappGetPendingPairings();
+    setPendingPairings(list);
+  }, [accomplish]);
+
+  const loadAuthorized = useCallback(async () => {
+    const list = await accomplish.whatsappGetAuthorizedJids();
+    setAuthorizedJids(list);
   }, [accomplish]);
 
   const loadStatus = useCallback(async () => {
@@ -66,7 +136,8 @@ export function WhatsAppPanel() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: load state on mount
     void loadStatus();
-    void loadAllowlist();
+    void loadPending();
+    void loadAuthorized();
 
     const unsubQR = accomplish.onWhatsAppQR?.((dataUrl) => {
       setQrDataUrl(dataUrl);
@@ -81,11 +152,16 @@ export function WhatsAppPanel() {
       }
     });
 
+    const unsubPairing = accomplish.onWhatsAppNewPairing?.(() => {
+      void loadPending();
+    });
+
     return () => {
       unsubQR?.();
       unsubStatus?.();
+      unsubPairing?.();
     };
-  }, [accomplish, loadStatus, loadAllowlist]);
+  }, [accomplish, loadStatus, loadPending, loadAuthorized]);
 
   const handleConnect = async () => {
     setError(null);
@@ -109,32 +185,27 @@ export function WhatsAppPanel() {
     }
   };
 
-  const handleAdd = async () => {
-    const cleaned = form.phoneNumber.replace(/\D/g, '');
-    if (!cleaned) {
-      setFormError(
-        'Informe um número de telefone válido (somente dígitos, com DDD e código do país).',
-      );
-      return;
-    }
-
-    setFormError(null);
+  const handleApprove = async (id: string, label?: string) => {
     try {
-      await accomplish.whatsappAddToAllowlist({
-        phoneNumber: cleaned,
-        label: form.label.trim() || undefined,
-      });
-      setForm(EMPTY_FORM);
-      setShowAddForm(false);
-      await loadAllowlist();
+      await accomplish.whatsappApprovePairing({ id, label });
+      await Promise.all([loadPending(), loadAuthorized()]);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Erro ao adicionar número.');
+      setError(err instanceof Error ? err.message : 'Erro ao aprovar.');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await accomplish.whatsappRemoveFromAllowlist(id);
-    await loadAllowlist();
+  const handleDeny = async (id: string) => {
+    try {
+      await accomplish.whatsappDenyPairing(id);
+      await loadPending();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao recusar.');
+    }
+  };
+
+  const handleRemoveAuthorized = async (id: string) => {
+    await accomplish.whatsappRemoveAuthorizedJid(id);
+    await loadAuthorized();
   };
 
   const statusColor = {
@@ -211,93 +282,61 @@ export function WhatsAppPanel() {
         )}
       </div>
 
-      {/* Allowlist section */}
+      {/* Pending Pairings */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className="text-sm font-semibold text-foreground">Números Permitidos</h4>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Apenas mensagens destes números acionarão o agente.
-            </p>
-          </div>
-          <button
-            onClick={() => {
-              setShowAddForm((v) => !v);
-              setFormError(null);
-              setForm(EMPTY_FORM);
-            }}
-            className="flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 shrink-0 ml-4"
-          >
-            <Phone className="h-4 w-4" />
-            Adicionar número
-          </button>
+        <div>
+          <h4 className="text-sm font-semibold text-foreground">
+            Verificações Pendentes
+            {pendingPairings.length > 0 && (
+              <span className="ml-2 inline-flex items-center justify-center rounded-full bg-warning/20 px-2 py-0.5 text-xs font-medium text-warning">
+                {pendingPairings.length}
+              </span>
+            )}
+          </h4>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Quando alguém envia uma mensagem pela primeira vez, o sistema gera um código de
+            verificação. Aprove ou recuse o acesso abaixo.
+          </p>
         </div>
 
-        {showAddForm && (
-          <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
-            <h4 className="text-sm font-semibold text-foreground">Novo número</h4>
-
-            {formError && <p className="text-sm text-destructive">{formError}</p>}
-
-            <div>
-              <label className="text-xs text-muted-foreground">
-                Número (com código do país e DDD) *
-              </label>
-              <input
-                type="tel"
-                value={form.phoneNumber}
-                onChange={(e) => setForm((f) => ({ ...f, phoneNumber: e.target.value }))}
-                placeholder="5511999999999"
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Ex: 5511999999999 (55 = Brasil, 11 = SP, sem espaços ou hífens)
-              </p>
-            </div>
-
-            <div>
-              <label className="text-xs text-muted-foreground">Apelido (opcional)</label>
-              <input
-                type="text"
-                value={form.label}
-                onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-                placeholder="Ex: João, Cliente VIP"
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-            </div>
-
-            <div className="flex gap-2 justify-end pt-1">
-              <button
-                onClick={() => {
-                  setShowAddForm(false);
-                  setForm(EMPTY_FORM);
-                  setFormError(null);
-                }}
-                className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => void handleAdd()}
-                className="rounded-md bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-              >
-                Adicionar
-              </button>
-            </div>
-          </div>
-        )}
-
-        {allowlist.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">
-            Nenhum número na lista. Adicione números para que o agente responda via WhatsApp.
+        {pendingPairings.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Nenhuma verificação pendente.
           </p>
         ) : (
           <div className="space-y-2">
-            {allowlist.map((entry) => (
-              <AllowlistCard
+            {pendingPairings.map((p) => (
+              <PendingPairingCard
+                key={p.id}
+                pairing={p}
+                onApprove={(label) => void handleApprove(p.id, label)}
+                onDeny={() => void handleDeny(p.id)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Authorized Contacts */}
+      <div className="space-y-3">
+        <div>
+          <h4 className="text-sm font-semibold text-foreground">Contatos Autorizados</h4>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Mensagens destes contatos acionam o agente automaticamente.
+          </p>
+        </div>
+
+        {authorizedJids.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Nenhum contato autorizado. Aprove uma verificação acima para adicionar.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {authorizedJids.map((entry) => (
+              <AuthorizedJidCard
                 key={entry.id}
                 entry={entry}
-                onDelete={() => void handleDelete(entry.id)}
+                onDelete={() => void handleRemoveAuthorized(entry.id)}
               />
             ))}
           </div>

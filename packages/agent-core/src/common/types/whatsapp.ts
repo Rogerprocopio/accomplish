@@ -7,8 +7,21 @@ export interface WhatsAppAllowlistEntry {
   createdAt: string;
 }
 
+export interface WhatsAppPendingPairing {
+  id: string;
+  jid: string;
+  code: string;
+  createdAt: string;
+}
+
+export interface WhatsAppAuthorizedJid {
+  id: string;
+  jid: string;
+  label?: string;
+  createdAt: string;
+}
+
 export interface WhatsAppState {
   status: WhatsAppStatus;
   phoneNumber?: string;
-  allowlist: WhatsAppAllowlistEntry[];
 }

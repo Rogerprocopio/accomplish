@@ -29,7 +29,8 @@ import type {
   CustomTool,
   CreateCustomToolInput,
   WhatsAppStatus,
-  WhatsAppAllowlistEntry,
+  WhatsAppPendingPairing,
+  WhatsAppAuthorizedJid,
 } from '@accomplish_ai/agent-core/common';
 
 // Define the API interface
@@ -404,16 +405,16 @@ interface AccomplishAPI {
   whatsappGetStatus(): Promise<{ status: WhatsAppStatus; phoneNumber?: string }>;
   whatsappConnect(): Promise<void>;
   whatsappDisconnect(): Promise<void>;
-  whatsappGetAllowlist(): Promise<WhatsAppAllowlistEntry[]>;
-  whatsappAddToAllowlist(input: {
-    phoneNumber: string;
-    label?: string;
-  }): Promise<WhatsAppAllowlistEntry>;
-  whatsappRemoveFromAllowlist(id: string): Promise<void>;
+  whatsappGetPendingPairings(): Promise<WhatsAppPendingPairing[]>;
+  whatsappApprovePairing(input: { id: string; label?: string }): Promise<WhatsAppAuthorizedJid>;
+  whatsappDenyPairing(id: string): Promise<void>;
+  whatsappGetAuthorizedJids(): Promise<WhatsAppAuthorizedJid[]>;
+  whatsappRemoveAuthorizedJid(id: string): Promise<void>;
   onWhatsAppQR?(callback: (dataUrl: string) => void): () => void;
   onWhatsAppStatus?(
     callback: (data: { status: WhatsAppStatus; phoneNumber?: string }) => void,
   ): () => void;
+  onWhatsAppNewPairing?(callback: (pairing: WhatsAppPendingPairing) => void): () => void;
 }
 
 interface AccomplishShell {

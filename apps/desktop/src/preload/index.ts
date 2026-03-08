@@ -509,11 +509,16 @@ const accomplishAPI = {
   whatsappGetStatus: (): Promise<unknown> => ipcRenderer.invoke('whatsapp:get-status'),
   whatsappConnect: (): Promise<void> => ipcRenderer.invoke('whatsapp:connect'),
   whatsappDisconnect: (): Promise<void> => ipcRenderer.invoke('whatsapp:disconnect'),
-  whatsappGetAllowlist: (): Promise<unknown[]> => ipcRenderer.invoke('whatsapp:get-allowlist'),
-  whatsappAddToAllowlist: (input: { phoneNumber: string; label?: string }): Promise<unknown> =>
-    ipcRenderer.invoke('whatsapp:add-to-allowlist', input),
-  whatsappRemoveFromAllowlist: (id: string): Promise<void> =>
-    ipcRenderer.invoke('whatsapp:remove-from-allowlist', id),
+  whatsappGetPendingPairings: (): Promise<unknown[]> =>
+    ipcRenderer.invoke('whatsapp:get-pending-pairings'),
+  whatsappApprovePairing: (input: { id: string; label?: string }): Promise<unknown> =>
+    ipcRenderer.invoke('whatsapp:approve-pairing', input),
+  whatsappDenyPairing: (id: string): Promise<void> =>
+    ipcRenderer.invoke('whatsapp:deny-pairing', id),
+  whatsappGetAuthorizedJids: (): Promise<unknown[]> =>
+    ipcRenderer.invoke('whatsapp:get-authorized-jids'),
+  whatsappRemoveAuthorizedJid: (id: string): Promise<void> =>
+    ipcRenderer.invoke('whatsapp:remove-authorized-jid', id),
   onWhatsAppQR: (callback: (dataUrl: string) => void) => {
     const listener = (_: unknown, dataUrl: string) => callback(dataUrl);
     ipcRenderer.on('whatsapp:qr', listener);
@@ -523,6 +528,11 @@ const accomplishAPI = {
     const listener = (_: unknown, data: { status: string; phoneNumber?: string }) => callback(data);
     ipcRenderer.on('whatsapp:status', listener);
     return () => ipcRenderer.removeListener('whatsapp:status', listener);
+  },
+  onWhatsAppNewPairing: (callback: (pairing: unknown) => void) => {
+    const listener = (_: unknown, pairing: unknown) => callback(pairing);
+    ipcRenderer.on('whatsapp:new-pairing', listener);
+    return () => ipcRenderer.removeListener('whatsapp:new-pairing', listener);
   },
 };
 
